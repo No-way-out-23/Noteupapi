@@ -1,13 +1,10 @@
-
 {
   "name": "noteup-api",
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
     "formidable": "^3.5.0",
-    "form-data": "^4.0.0"
+    "form-data": "^4.0.0",
     "node-fetch": "^2.6.1"
-}
-
   }
-
+}
