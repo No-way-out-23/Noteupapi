@@ -1,5 +1,4 @@
 import { IncomingForm } from 'formidable';
-import fs from 'fs';
 import FormData from 'form-data';
 
 export const config = {
@@ -9,14 +8,13 @@ export const config = {
 };
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', 'https://noteup-theta.vercel.app');
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
-
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Método no permitido' });
     return;
@@ -35,17 +33,15 @@ export default async function handler(req, res) {
       return;
     }
 
-    // ¡OJO! Si file.filepath no existe en serverless, usa fs.readFileSync o file.buffer si formidable lo da
-    let fileBuffer;
-    try {
-      fileBuffer = fs.readFileSync(file.filepath);
-    } catch (e) {
-      res.status(500).json({ error: 'No se pudo leer el archivo.' });
+    // Usa buffer si existe, no filepath
+    let fileBuffer = file.buffer;
+    if (!fileBuffer) {
+      res.status(500).json({ error: 'No se pudo leer el archivo. (No hay buffer en el archivo subido)' });
       return;
     }
 
     const formData = new FormData();
-    formData.append('file', fileBuffer, file.originalFilename);
+    formData.append('file', fileBuffer, file.originalFilename || "audio.webm");
     formData.append('model', 'whisper-1');
 
     try {
@@ -69,4 +65,3 @@ export default async function handler(req, res) {
     }
   });
 }
-
