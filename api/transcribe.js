@@ -2,13 +2,11 @@ import formidable from 'formidable';
 import { Readable } from 'stream';
 
 export const config = {
-  api: {
-    bodyParser: false,
-  },
+  api: { bodyParser: false },
 };
 
 export default async function handler(req, res) {
-  // CORS
+  // CORS headers...
   const FRONTEND_ORIGIN = "https://noteup-theta.vercel.app";
   res.setHeader('Access-Control-Allow-Origin', FRONTEND_ORIGIN);
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -30,29 +28,41 @@ export default async function handler(req, res) {
         res.status(400).json({ error: 'Error procesando el archivo.' });
         return;
       }
-      const audioFile = files.audio;
+
+      // --- DEBUG ---
+      console.log("FIELDS:", fields);
+      console.log("FILES:", files);
+
+      let audioFile = files.audio;
+      if (Array.isArray(audioFile)) {
+        audioFile = audioFile[0];
+      }
+
       if (!audioFile) {
         res.status(400).json({ error: 'Archivo de audio no enviado. Usa el campo "audio".' });
         return;
       }
 
       let fileStream;
-      let filename = audioFile.originalFilename || 'audio.webm'; // o mp3/wav según tu caso
+      let filename = audioFile.originalFilename || 'audio.webm';
 
-      // Maneja ambos casos: path en disco o buffer en memoria
+      // Debug: log audioFile for field info
+      console.log("audioFile STRUCTURE:", audioFile);
+
       if (audioFile.filepath) {
-        // En local: path temporal en disco
         const fs = await import('fs');
         fileStream = fs.createReadStream(audioFile.filepath);
       } else if (audioFile.toBuffer) {
-        // En serverless/Vercel: buffer en memoria
         const buffer = await audioFile.toBuffer();
         fileStream = Readable.from(buffer);
+      } else if (audioFile.buffer) {
+        fileStream = Readable.from(audioFile.buffer);
       } else if (audioFile._writeStream && audioFile._writeStream.buffer) {
-        // Otro caso raro de formidable
         fileStream = Readable.from(audioFile._writeStream.buffer);
+      } else if (audioFile.file) {
+        fileStream = Readable.from(audioFile.file);
       } else {
-        res.status(500).json({ error: 'No se pudo obtener el archivo del request.' });
+        res.status(500).json({ error: 'No se pudo obtener el archivo del request.', detalle: audioFile });
         return;
       }
 
