@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
+    "fetch-blob": "^4.0.0",
     "form-data": "^4.0.0",
+    "formdata-node": "^6.0.3",
     "formidable": "^3.5.0",
     "formidable-serverless": "^1.1.1",
     "node-fetch": "^2.6.1"
