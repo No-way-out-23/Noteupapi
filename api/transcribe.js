@@ -81,12 +81,20 @@ export default async function handler(req, res) {
           body: formData,
         });
 
-        const data = await openaiRes.json();
-        if (data.error) {
-          res.status(500).json({ error: data.error.message });
+        const openaiResText = await openaiRes.text();
+        console.log("OpenAI RAW response:", openaiResText);
+
+        let data;
+        try {
+          data = JSON.parse(openaiResText);
+        } catch (e) {
+          res.status(500).json({ error: 'Respuesta de OpenAI no es JSON', raw: openaiResText });
           return;
         }
-
+        if (data.error) {
+          res.status(500).json({ error: data.error.message, detalle: data });
+          return;
+        }
         res.status(200).json({ text: data.text });
       } catch (error) {
         res.status(500).json({ error: 'Error llamando a la API de OpenAI.', detail: error.message });
