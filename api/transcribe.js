@@ -1,31 +1,28 @@
-import formidable from 'formidable';
+import { IncomingForm } from 'formidable';
 import fs from 'fs';
 import FormData from 'form-data';
 
 export const config = {
   api: {
-    bodyParser: false, // necesario para manejar archivos
+    bodyParser: false,
   },
 };
 
 export default async function handler(req, res) {
-  // === INICIO: CORS HEADERS ===
-  res.setHeader('Access-Control-Allow-Origin', 'https://noteup-theta.vercel.app'); // O pon tu frontend específico aquí
+  res.setHeader('Access-Control-Allow-Origin', 'https://noteup-theta.vercel.app');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
-  // === FIN: CORS HEADERS ===
 
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Método no permitido' });
     return;
   }
 
-  const form = new formidable.IncomingForm();
+  const form = new IncomingForm();
   form.parse(req, async (err, fields, files) => {
     if (err) {
       res.status(500).json({ error: 'Error al procesar archivo', detail: err.message });
@@ -38,10 +35,18 @@ export default async function handler(req, res) {
       return;
     }
 
-    const fileStream = fs.createReadStream(file.filepath);
+    // ¡OJO! Si file.filepath no existe en serverless, usa fs.readFileSync o file.buffer si formidable lo da
+    let fileBuffer;
+    try {
+      fileBuffer = fs.readFileSync(file.filepath);
+    } catch (e) {
+      res.status(500).json({ error: 'No se pudo leer el archivo.' });
+      return;
+    }
+
     const formData = new FormData();
-    formData.append('file', fileStream, file.originalFilename);
-    formData.append('model', 'whisper-1'); // o el modelo que estés usando
+    formData.append('file', fileBuffer, file.originalFilename);
+    formData.append('model', 'whisper-1');
 
     try {
       const openaiRes = await fetch('https://api.openai.com/v1/audio/transcriptions', {
@@ -64,3 +69,4 @@ export default async function handler(req, res) {
     }
   });
 }
+
