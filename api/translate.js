@@ -9,7 +9,7 @@ export const config = {
 export default async function handler(req, res) {
   // === INICIO: CORS HEADERS ===
   // Cambia este dominio por el de tu frontend
-  const FRONTEND_ORIGIN = "*";
+  const FRONTEND_ORIGIN = "https://noteup-theta.vercel.app";
   res.setHeader('Access-Control-Allow-Origin', FRONTEND_ORIGIN);
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
