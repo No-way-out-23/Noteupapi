@@ -1,5 +1,5 @@
 import formidable from 'formidable';
-import fs from 'fs';
+import { Readable } from 'stream';
 
 export const config = {
   api: {
@@ -23,7 +23,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Cambia aquí la inicialización:
     const form = formidable({ multiples: false });
 
     form.parse(req, async (err, fields, files) => {
@@ -37,12 +36,30 @@ export default async function handler(req, res) {
         return;
       }
 
-      try {
-        const fileStream = fs.createReadStream(audioFile.filepath);
+      let fileStream;
+      let filename = audioFile.originalFilename || 'audio.webm'; // o mp3/wav según tu caso
 
+      // Maneja ambos casos: path en disco o buffer en memoria
+      if (audioFile.filepath) {
+        // En local: path temporal en disco
+        const fs = await import('fs');
+        fileStream = fs.createReadStream(audioFile.filepath);
+      } else if (audioFile.toBuffer) {
+        // En serverless/Vercel: buffer en memoria
+        const buffer = await audioFile.toBuffer();
+        fileStream = Readable.from(buffer);
+      } else if (audioFile._writeStream && audioFile._writeStream.buffer) {
+        // Otro caso raro de formidable
+        fileStream = Readable.from(audioFile._writeStream.buffer);
+      } else {
+        res.status(500).json({ error: 'No se pudo obtener el archivo del request.' });
+        return;
+      }
+
+      try {
         const FormData = (await import('form-data')).default;
         const formData = new FormData();
-        formData.append('file', fileStream, audioFile.originalFilename);
+        formData.append('file', fileStream, filename);
         formData.append('model', 'whisper-1');
 
         const openaiRes = await fetch('https://api.openai.com/v1/audio/transcriptions', {
