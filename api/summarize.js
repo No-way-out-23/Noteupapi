@@ -1,3 +1,10 @@
+import fetch from 'node-fetch';
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -6,7 +13,24 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { text } = req.body;
+    // Lee y parsea el body manualmente
+    let body = '';
+    for await (const chunk of req) {
+      body += chunk;
+    }
+    let json;
+    try {
+      json = JSON.parse(body);
+    } catch (e) {
+      res.status(400).json({ error: 'El body enviado no es JSON válido.' });
+      return;
+    }
+
+    const { text } = json;
+    if (!text) {
+      res.status(400).json({ error: 'Falta el campo "text" en el body.' });
+      return;
+    }
 
     const prompt = `Resume el siguiente texto en formato de lista con puntos clave, orientado a estudiantes universitarios:\n\n${text}`;
 
@@ -22,11 +46,23 @@ export default async function handler(req, res) {
       }),
     });
 
-    const data = await openaiRes.json();
-    const summary = data.choices?.[0]?.message?.content || "No se obtuvo resumen.";
+    let data;
+    try {
+      data = await openaiRes.json();
+    } catch (err) {
+      res.status(500).json({ error: 'No se pudo parsear la respuesta de OpenAI', raw: await openaiRes.text() });
+      return;
+    }
 
+    if (data.error) {
+      res.status(500).json({ error: data.error.message });
+      return;
+    }
+
+    const summary = data.choices?.[0]?.message?.content || "No se obtuvo resumen.";
     res.status(200).json({ summary });
+
   } catch (error) {
-    res.status(500).json({ error: 'Error interno del servidor.' });
+    res.status(500).json({ error: 'Error interno del servidor.', detail: error.message, stack: error.stack });
   }
 }
