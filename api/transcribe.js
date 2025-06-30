@@ -1,5 +1,4 @@
-import { IncomingForm } from 'formidable';
-import FormData from 'form-data';
+import formidable from 'formidable';
 import fs from 'fs';
 
 export const config = {
@@ -9,70 +8,74 @@ export const config = {
 };
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // === INICIO: CORS HEADERS ===
+  const FRONTEND_ORIGIN = "https://noteup-theta.vercel.app";
+  res.setHeader('Access-Control-Allow-Origin', FRONTEND_ORIGIN);
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
+  // === FIN: CORS HEADERS ===
+
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Método no permitido' });
     return;
   }
 
-  const form = new IncomingForm({ maxFileSize: 25 * 1024 * 1024 });
-  form.parse(req, async (err, fields, files) => {
-    if (err) {
-      res.status(500).json({ error: 'Error al procesar archivo', detail: err.message });
-      return;
-    }
+  try {
+    // Procesa el form-data para obtener el archivo de audio
+    const form = new formidable.IncomingForm();
 
-    const file = files.audio;
-    if (!file) {
-      res.status(400).json({ error: 'Archivo de audio no proporcionado.' });
-      return;
-    }
-
-    // Lee el archivo desde buffer o desde el path temporal
-    let fileBuffer = file.buffer;
-    if (!fileBuffer) {
-      const path = file.filepath || file.path;
-      if (path) {
-        try {
-          fileBuffer = fs.readFileSync(path);
-        } catch (e) {
-          res.status(500).json({ error: 'No se pudo leer el archivo.' });
-          return;
-        }
-      } else {
-        res.status(500).json({ error: 'No se pudo leer el archivo. (buffer y path no disponibles)' });
+    form.parse(req, async (err, fields, files) => {
+      if (err) {
+        res.status(400).json({ error: 'Error procesando el archivo.' });
         return;
       }
-    }
 
-    const formData = new FormData();
-    formData.append('file', fileBuffer, file.originalFilename || "audio.webm");
-    formData.append('model', 'whisper-1');
-
-    try {
-      const openaiRes = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          ...formData.getHeaders(),
-        },
-        body: formData,
-      });
-
-      const data = await openaiRes.json();
-      if (data.text) {
-        res.status(200).json({ text: data.text });
-      } else {
-        res.status(500).json({ error: data.error?.message || "Error al transcribir." });
+      const audioFile = files.audio;
+      if (!audioFile) {
+        res.status(400).json({ error: 'Archivo de audio no enviado. Usa el campo "audio".' });
+        return;
       }
-    } catch (error) {
-      res.status(500).json({ error: "Error interno al enviar a OpenAI.", detail: error.message });
-    }
-  });
+
+      // Llama a la API de OpenAI para transcripción
+      try {
+        const fileStream = fs.createReadStream(audioFile.filepath);
+
+        // Construye form-data manualmente para fetch
+        const FormData = (await import('form-data')).default;
+        const formData = new FormData();
+        formData.append('file', fileStream, audioFile.originalFilename);
+        formData.append('model', 'whisper-1');
+        // Puedes añadir: formData.append('language', 'es');  // para español, si lo deseas
+
+        const openaiRes = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+            ...formData.getHeaders(),
+          },
+          body: formData,
+        });
+
+        const data = await openaiRes.json();
+
+        if (data.error) {
+          res.status(500).json({ error: data.error.message });
+          return;
+        }
+
+        res.status(200).json({ text: data.text });
+
+      } catch (error) {
+        res.status(500).json({ error: 'Error llamando a la API de OpenAI.', detail: error.message });
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: 'Error interno del servidor.', detail: error.message, stack: error.stack });
+  }
 }
