@@ -7,6 +7,18 @@ export const config = {
 };
 
 export default async function handler(req, res) {
+  // === INICIO: CORS HEADERS ===
+  res.setHeader('Access-Control-Allow-Origin', '*'); // O pon tu frontend específico aquí
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
+  // Soportar preflight OPTIONS (CORS)
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  // === FIN: CORS HEADERS ===
+
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Método no permitido' });
     return;
