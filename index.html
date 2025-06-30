@@ -1,0 +1,49 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Note Up</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <section id="pantalla1" class="pantalla">
+            <h1>Note Up</h1>
+            <p>Graba, resume y aprende con IA.</p>
+            <button onclick="irAPantalla(2)">Empezar</button>
+        </section>
+
+        <section id="pantalla2" class="pantalla oculto">
+            <h2>Sube o graba tu audio</h2>
+            <button onclick="simularGrabacion()">🎙️ Grabar</button>
+            <button onclick="irAPantalla(3)">Subir archivo</button>
+        </section>
+
+        <section id="pantalla3" class="pantalla oculto">
+            <h2>Transcribiendo...</h2>
+            <div class="loader"></div>
+            <button onclick="irAPantalla(4)">Ver transcripción</button>
+        </section>
+
+        <section id="pantalla4" class="pantalla oculto">
+            <h2>Transcripción</h2>
+            <p><strong>Clase: Inteligencia Artificial</strong></p>
+            <p>La inteligencia artificial es una rama de la informática que busca crear sistemas capaces de realizar tareas que requieren inteligencia humana...</p>
+            <button onclick="mostrarResumen()">Generar resumen</button>
+            <div id="resumen" class="oculto">
+                <h3>Resumen:</h3>
+                <ul>
+                    <li>Definición de IA</li>
+                    <li>Ámbitos de aplicación</li>
+                    <li>Ejemplos actuales</li>
+                </ul>
+                <button>Exportar como PDF</button>
+                <button onclick="irAPantalla(1)">Nuevo audio</button>
+            </div>
+        </section>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
