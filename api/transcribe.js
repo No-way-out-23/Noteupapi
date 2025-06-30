@@ -1,4 +1,6 @@
 import formidable from 'formidable';
+import { FormData } from 'formdata-node';
+import { fileFromPath } from 'formdata-node/file-from-path';
 
 export const config = {
   api: { bodyParser: false }
@@ -34,7 +36,7 @@ export default async function handler(req, res) {
         return;
       }
 
-      // Esperar a que el archivo esté completamente escrito antes de leerlo
+      // Espera a que el archivo esté completamente escrito
       await new Promise((resolve) => {
         if (audioFile._writeStream.closed) {
           resolve();
@@ -43,22 +45,19 @@ export default async function handler(req, res) {
         }
       });
 
-      const fs = await import('fs');
-      const fileStream = fs.createReadStream(audioFile.filepath);
+      // Usa formdata-node para el form-data correcto
+      const formData = new FormData();
+      formData.append('file', await fileFromPath(audioFile.filepath, audioFile.originalFilename || 'audio.mp3'));
+      formData.append('model', 'whisper-1');
 
       try {
-        const FormData = (await import('form-data')).default;
-        const formData = new FormData();
-        formData.append('file', fileStream, audioFile.originalFilename || 'audio.mp3');
-        formData.append('model', 'whisper-1');
-
         const openaiRes = await fetch('https://api.openai.com/v1/audio/transcriptions', {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-            ...formData.getHeaders(),
+            ...formData.headers
           },
-          body: formData,
+          body: formData
         });
 
         const openaiResText = await openaiRes.text();
