@@ -2,11 +2,24 @@ import fetch from 'node-fetch';
 
 export const config = {
   api: {
-    bodyParser: false, // <--- esto desactiva el body parser
+    bodyParser: false,
   },
 };
 
 export default async function handler(req, res) {
+  // === INICIO: CORS HEADERS ===
+  // Cambia este dominio por el de tu frontend
+  const FRONTEND_ORIGIN = "*";
+  res.setHeader('Access-Control-Allow-Origin', FRONTEND_ORIGIN);
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  // === FIN: CORS HEADERS ===
+
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Método no permitido' });
     return;
