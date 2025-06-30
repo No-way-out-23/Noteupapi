@@ -1,5 +1,8 @@
-import { IncomingForm } from 'formidable-serverless';
+import pkg from 'formidable-serverless';
+const { IncomingForm } = pkg;
 import FormData from 'form-data';
+
+// ...el resto de tu código...
 
 export const config = {
   api: {
