@@ -1,4 +1,4 @@
-import { IncomingForm } from 'formidable';
+import { IncomingForm } from 'formidable-serverless';
 import FormData from 'form-data';
 
 export const config = {
