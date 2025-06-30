@@ -34,7 +34,7 @@ export default async function handler(req, res) {
         return;
       }
 
-      // Esperar el cierre del WriteStream antes de leer el archivo (soluciona el problema más frecuente de serverless)
+      // Esperar a que el archivo esté completamente escrito antes de leerlo
       await new Promise((resolve) => {
         if (audioFile._writeStream.closed) {
           resolve();
@@ -80,13 +80,6 @@ export default async function handler(req, res) {
         res.status(500).json({ error: 'Error llamando a la API de OpenAI.', detail: error.message });
       }
     });
-
-  } catch (error) {
-    res.status(500).json({ error: 'Error interno del servidor.', detail: error.message, stack: error.stack });
-  }
-}
-
-
   } catch (error) {
     res.status(500).json({ error: 'Error interno del servidor.', detail: error.message, stack: error.stack });
   }
