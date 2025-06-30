@@ -1,5 +1,11 @@
 import fetch from 'node-fetch';
 
+export const config = {
+  api: {
+    bodyParser: false, // <--- esto desactiva el body parser
+  },
+};
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Método no permitido' });
@@ -7,7 +13,20 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { text, targetLanguage } = req.body;
+    // Lee y parsea el body manualmente
+    let body = '';
+    for await (const chunk of req) {
+      body += chunk;
+    }
+    let json;
+    try {
+      json = JSON.parse(body);
+    } catch (e) {
+      res.status(400).json({ error: 'El body enviado no es JSON válido.' });
+      return;
+    }
+
+    const { text, targetLanguage } = json;
     if (!text || !targetLanguage) {
       res.status(400).json({ error: 'Faltan datos en el body (text o targetLanguage).' });
       return;
@@ -27,7 +46,6 @@ export default async function handler(req, res) {
       }),
     });
 
-    // Intenta parsear la respuesta como JSON
     let data;
     try {
       data = await openaiRes.json();
@@ -36,7 +54,6 @@ export default async function handler(req, res) {
       return;
     }
 
-    // Si OpenAI responde error, muéstralo
     if (data.error) {
       res.status(500).json({ error: data.error.message });
       return;
@@ -46,7 +63,6 @@ export default async function handler(req, res) {
     res.status(200).json({ translatedText });
 
   } catch (error) {
-    // Captura el error real y lo muestra en la respuesta
     res.status(500).json({ error: 'Error interno del servidor.', detail: error.message, stack: error.stack });
   }
 }
