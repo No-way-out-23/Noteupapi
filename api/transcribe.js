@@ -1,5 +1,4 @@
-import pkg from 'formidable-serverless';
-const { IncomingForm } = pkg;
+import { IncomingForm } from 'formidable';
 import FormData from 'form-data';
 import fs from 'fs';
 
@@ -22,7 +21,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const form = new IncomingForm();
+  const form = new IncomingForm({ maxFileSize: 25 * 1024 * 1024 });
   form.parse(req, async (err, fields, files) => {
     if (err) {
       res.status(500).json({ error: 'Error al procesar archivo', detail: err.message });
