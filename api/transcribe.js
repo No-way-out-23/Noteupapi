@@ -1,8 +1,7 @@
 import pkg from 'formidable-serverless';
 const { IncomingForm } = pkg;
 import FormData from 'form-data';
-
-// ...el resto de tu código...
+import fs from 'fs';
 
 export const config = {
   api: {
@@ -36,11 +35,21 @@ export default async function handler(req, res) {
       return;
     }
 
-    // Usa buffer si existe, no filepath
+    // Lee el archivo desde buffer o desde el path temporal
     let fileBuffer = file.buffer;
     if (!fileBuffer) {
-      res.status(500).json({ error: 'No se pudo leer el archivo. (No hay buffer en el archivo subido)' });
-      return;
+      const path = file.filepath || file.path;
+      if (path) {
+        try {
+          fileBuffer = fs.readFileSync(path);
+        } catch (e) {
+          res.status(500).json({ error: 'No se pudo leer el archivo.' });
+          return;
+        }
+      } else {
+        res.status(500).json({ error: 'No se pudo leer el archivo. (buffer y path no disponibles)' });
+        return;
+      }
     }
 
     const formData = new FormData();
