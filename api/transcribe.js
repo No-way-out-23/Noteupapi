@@ -1,11 +1,10 @@
-
 import formidable from 'formidable';
 import fs from 'fs';
 import FormData from 'form-data';
 
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: false, // necesario para manejar archivos
   },
 };
 
@@ -18,7 +17,7 @@ export default async function handler(req, res) {
   const form = new formidable.IncomingForm();
   form.parse(req, async (err, fields, files) => {
     if (err) {
-      res.status(500).json({ error: 'Error al procesar archivo' });
+      res.status(500).json({ error: 'Error al procesar archivo', detail: err.message });
       return;
     }
 
@@ -30,19 +29,4 @@ export default async function handler(req, res) {
 
     const fileStream = fs.createReadStream(file.filepath);
     const formData = new FormData();
-    formData.append('file', fileStream, file.originalFilename);
-    formData.append('model', 'whisper-1');
-
-    const openaiRes = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        ...formData.getHeaders(),
-      },
-      body: formData,
-    });
-
-    const data = await openaiRes.json();
-    res.status(openaiRes.status).json(data);
-  });
-}
+    formData.append('file', fileStream, file.origi
