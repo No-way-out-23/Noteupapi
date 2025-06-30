@@ -28,7 +28,11 @@ export default async function handler(req, res) {
       return;
     }
 
-    const file = files.audio;
+    // Aceptar distintos nombres de campo o arreglos
+    let file = files.audio || files.file || Object.values(files)[0];
+    if (Array.isArray(file)) {
+      file = file[0];
+    }
     if (!file) {
       res.status(400).json({ error: 'Archivo de audio no proporcionado.' });
       return;
